@@ -23,11 +23,9 @@ func (layer *Layer) InitLayer(inputs int, neurons int) {
 			layer.Weights.Set(i, j, 0.01*(rand.Float64()-0.5)*2)
 		}
 	}
-
 }
 
 func (layer *Layer) Foward(inputs *mat.Dense) *mat.Dense {
-
 	// rows - number of samples
 	// columns - number os neurons of a layer
 	rows, _ := inputs.Dims()
@@ -43,6 +41,13 @@ func (layer *Layer) Foward(inputs *mat.Dense) *mat.Dense {
 	}
 
 	return result
+}
+
+func (layer *Layer) CopyOf() *Layer {
+	return &Layer{
+		Weights: mat.DenseCopyOf(layer.Weights),
+		Bias:    mat.DenseCopyOf(layer.Bias),
+	}
 }
 
 func FlatMatrix(m [][]float64) []float64 {

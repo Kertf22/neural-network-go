@@ -21,13 +21,11 @@ func LossClassification(output *mat.Dense, class_targets *mat.Dense) float64 {
 		return v
 	}, copyOutput)
 
-	if cols == 1 {
-		for i := 0; i < rows; i++ {
+	for i := 0; i < rows; i++ {
+		if cols == 1 {
 			c := int(class_targets.At(i, 0))
 			values.Set(0, i, -math.Log(copyOutput.At(i, c)))
-		}
-	} else {
-		for i := 0; i < rows; i++ {
+		} else {
 			for j := 0; j < cols; j++ {
 				c := class_targets.At(i, j)
 				if c != 0 {

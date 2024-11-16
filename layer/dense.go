@@ -32,7 +32,6 @@ func (layer *Layer) Foward(inputs *mat.Dense) *mat.Dense {
 	_, cols := layer.Weights.Dims()
 	result := mat.NewDense(rows, cols, nil)
 	result.Product(inputs, layer.Weights)
-
 	for i := 0; i < result.RawMatrix().Rows; i++ {
 		for j := 0; j < result.RawMatrix().Cols; j++ {
 			result.Set(i, j,
@@ -50,22 +49,17 @@ func (layer *Layer) CopyOf() *Layer {
 	}
 }
 
-func FlatMatrix(m [][]float64) []float64 {
-	var flat []float64
-	for i := 0; i < len(m); i++ {
-		flat = append(flat, m[i]...)
-	}
-	return flat
-}
+// gradient is the derivate of next layer with respect to inputs
+func (layer *Layer) Backward(gradient, inputs *mat.Dense) (*mat.Dense, *mat.Dense, *mat.Dense) {
+	// derivate of weights is inputs transposed
+	var dweights mat.Dense
+	dweights.Mul(gradient.T(), inputs)
+	// derivate of bias is 1, so we can just sum all the values
+	var dbias mat.Dense
+	dbias.Mul(mat.NewDense(1, gradient.RawMatrix().Cols, nil), gradient)
+	// derivate of inputs is weights transposed
+	var lgradient mat.Dense
+	lgradient.Mul(gradient, layer.Weights.T())
 
-func FromDense(dense *mat.Dense) [][]float64 {
-	r := make([][]float64, dense.RawMatrix().Rows)
-	for i := 0; i < dense.RawMatrix().Rows; i++ {
-		line := make([]float64, dense.RawMatrix().Cols)
-		for j := 0; j < dense.RawMatrix().Cols; j++ {
-			line[j] = dense.At(i, j)
-		}
-		r[i] = line
-	}
-	return r
+	return &lgradient, &dweights, &dbias
 }

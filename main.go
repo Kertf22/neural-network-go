@@ -151,44 +151,68 @@ func f(x float64) float64 {
 	return 2 * x * x
 }
 
+func derivateFromInput(dvalues, weights *mat.Dense) *mat.Dense {
+	var r mat.Dense
+	r.Mul(dvalues, weights)
+
+	return &r
+}
+
+func derivateFromWeights(dvalues, inputs *mat.Dense) *mat.Dense {
+	var r mat.Dense
+	r.Mul(dvalues.T(), inputs)
+
+	return &r
+}
+
+func derivateFromBias(dvalues *mat.Dense) *mat.Dense {
+	var r mat.Dense = *mat.NewDense(1, dvalues.RawMatrix().Cols, nil)
+
+	for i := 0; i < dvalues.RawMatrix().Rows; i++ {
+		rowSum := mat.Sum(dvalues.ColView(i))
+		r.Set(0, i, rowSum)
+	}
+	return &r
+}
+
 func main() {
-	// Optimizer()
-	p := plot.New()
-	p.Title.Text = "Approximate Derivative"
-	p.X.Label.Text = "X"
-	p.Y.Label.Text = "Y"
-	for i := 0; i < 5; i++ {
-		points := make(plotter.XYs, 2)
-		s, err := plotter.NewLine(points)
+	// dvalues := mat.NewDense(3, 3, []float64{
+	// 	1, 1, 1,
+	// 	2, 2, 2,
+	// 	3, 3, 3,
+	// })
 
-		x1 := float64(i)
-		x2 := x1 + 0.0001
+	inputs := mat.DenseCopyOf(mat.NewDense(3, 4, []float64{
+		1, 2, 3, 2.5,
+		2.0, 5.0, -1.0, 2.0,
+		-1.5, 2.7, 3.3, -0.8,
+	}))
 
-		y1 := f(x1)
-		y2 := f(x2)
-		approximate_derivative := (y2 - y1) / (x2 - x1)
-		fmt.Println(approximate_derivative)
-
-		b := y2 - approximate_derivative*x2
-		to_plot := []float64{x1 - 1, x2 + 1}
-		
-		points[0].X = to_plot[0]
-		points[0].Y = approximate_derivative*to_plot[0] + b
-		points[1].X = to_plot[1]
-		points[1].Y = approximate_derivative*to_plot[1] + b
-		
-
-		if err != nil {
-			panic(err)
-		}
-		s.XYs = points
-		s.Color = colors[i]
-		p.Add(s)
+	layer1 := layer.Layer{
+		Weights: mat.DenseCopyOf(mat.NewDense(3, 4, []float64{
+			0.2, 0.8, -0.5, 1,
+			0.5, -0.91, 0.26, -0.5,
+			-0.26, -0.27, 0.17, 0.87,
+		}).T()),
+		Bias: mat.NewDense(1, 3, []float64{2, 3, 0.5}),
 	}
 
-	if err := p.Save(5*vg.Inch, 5*vg.Inch, ""+
-		time.Now().Local().Format(time.RFC3339)+"pointss.png"); err != nil {
-		panic(err)
-	}
+	output := layer1.Foward(inputs)
+	
+	relu_output := activation.ReLu(output)
+
+	drelu := activation.ReluBackward(output, relu_output)
+	
+	_, dweights, dbias := layer1.Backward(drelu, inputs)
+
+	fmt.Println(mat.Formatted(dweights))
+
+	dweights.Scale(0.001, dweights)
+	dbias.Scale(0.001, dbias)
+
+	layer1.Weights.Sub(layer1.Weights, dweights.T())
+	layer1.Bias.Sub(layer1.Bias, dbias)
+	fmt.Println(mat.Formatted(layer1.Weights))
+	fmt.Println(mat.Formatted(layer1.Bias))
 
 }

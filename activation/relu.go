@@ -16,3 +16,16 @@ func ReLu(inputs *mat.Dense) *mat.Dense {
 	}
 	return copy
 }
+
+func ReluBackward(z, dvalues *mat.Dense) *mat.Dense {
+	var r mat.Dense = *mat.NewDense(dvalues.RawMatrix().Rows, dvalues.RawMatrix().Cols, nil)
+
+	for i := 0; i < dvalues.RawMatrix().Rows; i++ {
+		for j := 0; j < dvalues.RawMatrix().Cols; j++ {
+			if z.At(i, j) > 0 {
+				r.Set(i, j, dvalues.At(i, j))
+			}
+		}
+	}
+	return &r
+}
